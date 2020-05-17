@@ -9,6 +9,8 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
+
 
 #include <signal.h>
 bool runloop = true;
@@ -18,7 +20,7 @@ void sighandler(int sig)
 using namespace std;
 using namespace Eigen;
 
-const string robot_file = "./resources/panda_arm.urdf";
+const string robot_file = "./resources/toro.urdf";
 
 #define JOINT_CONTROLLER      0
 #define POSORI_CONTROLLER     1
@@ -69,7 +71,7 @@ int main() {
 	MatrixXd N_prec = MatrixXd::Identity(dof, dof);
 
 	// pose task
-	const string control_link = "link7";
+	const string control_link = "neck_link2";
 	const Vector3d control_point = Vector3d(0,0,0.07);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
@@ -99,8 +101,9 @@ int main() {
 	joint_task->_kv = 15.0;
 
 	VectorXd q_init_desired = initial_q;
-	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
-	q_init_desired *= M_PI/180.0;
+	//q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	//q_init_desired *= M_PI/180.0;
+    q_init_desired(26) = 1.3;
 	joint_task->_desired_position = q_init_desired;
 
 	// create a timer
@@ -109,6 +112,9 @@ int main() {
 	timer.setLoopFrequency(1000); 
 	double start_time = timer.elapsedTime(); //secs
 	bool fTimerDidSleep = true;
+    
+    ofstream myfile;
+    myfile.open ("joints.csv");
 
 	while (runloop) {
 		// wait for next scheduled loop
@@ -133,6 +139,7 @@ int main() {
 
 			command_torques = joint_task_torques;
 
+            /*
 			if( (robot->_q - q_init_desired).norm() < 0.15 )
 			{
 				posori_task->reInitializeTask();
@@ -144,6 +151,7 @@ int main() {
 
 				state = POSORI_CONTROLLER;
 			}
+             */
 		}
 
 		else if(state == POSORI_CONTROLLER)
@@ -160,11 +168,15 @@ int main() {
 
 			command_torques = posori_task_torques + joint_task_torques;
 		}
-
+        
 		// send to redis
 		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
-
 		controller_counter++;
+        myfile << time;
+        for (int i = 0; i < robot->_q.size(); i++) {
+            myfile << "," << robot->_q(i);
+        }
+        myfile << endl;
 	}
 
 	double end_time = timer.elapsedTime();
@@ -173,5 +185,6 @@ int main() {
     std::cout << "Controller Loop updates   : " << timer.elapsedCycles() << "\n";
     std::cout << "Controller Loop frequency : " << timer.elapsedCycles()/end_time << "Hz\n";
 
+    myfile.close();
 	return 0;
 }

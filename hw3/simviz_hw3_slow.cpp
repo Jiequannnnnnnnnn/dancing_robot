@@ -1,4 +1,3 @@
-#include <GL/glew.h>
 #include "Sai2Model.h"
 #include "Sai2Graphics.h"
 #include "Sai2Simulation.h"
@@ -7,8 +6,6 @@
 #include "timer/LoopTimer.h"
 
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
-
-#include "uiforce/UIForceWidget.h"
 
 #include <iostream>
 #include <string>
@@ -20,28 +17,26 @@ void sighandler(int){fSimulationRunning = false;}
 using namespace std;
 using namespace Eigen;
 
-const string world_file = "./resources/world_toro.urdf";
-const string robot_file = "./resources/toro.urdf";
-const string robot_name = "toro";
+const string world_file = "./resources/world.urdf";
+const string robot_file = "./resources/panda_arm.urdf";
+const string robot_name = "PANDA";
 const string camera_name = "camera_fixed";
 
 // redis keys:
 // - write:
-const std::string JOINT_ANGLES_KEY = "sai2::cs225a::project::sensors::q";
-const std::string JOINT_VELOCITIES_KEY = "sai2::cs225a::project::sensors::dq";
+const std::string JOINT_ANGLES_KEY = "sai2::cs225a::panda_robot::sensors::q";
+const std::string JOINT_VELOCITIES_KEY = "sai2::cs225a::panda_robot::sensors::dq";
 // - read
-const std::string JOINT_TORQUES_COMMANDED_KEY = "sai2::cs225a::project::actuators::fgc";
+const std::string TORQUES_COMMANDED_KEY = "sai2::cs225a::panda_robot::actuators::fgc";
+const string CONTROLLER_RUNING_KEY = "sai2::cs225a::controller_running";
 
 RedisClient redis_client;
 
 // simulation function prototype
-void simulation(Sai2Model::Sai2Model* robot, Simulation::Sai2Simulation* sim, UIForceWidget *ui_force_widget);
+void simulation(Sai2Model::Sai2Model* robot, Simulation::Sai2Simulation* sim);
 
 // callback to print glfw errors
 void glfwError(int error, const char* description);
-
-// callback to print glew errors
-bool glewInitialize();
 
 // callback when a key is pressed
 void keySelect(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -57,7 +52,6 @@ bool fTransYn = false;
 bool fTransZp = false;
 bool fTransZn = false;
 bool fRotPanTilt = false;
-bool fRobotLinkSelect = false;
 
 int main() {
 	cout << "Loading URDF world model file: " << world_file << endl;
@@ -121,22 +115,17 @@ int main() {
 	glfwSetKeyCallback(window, keySelect);
 	glfwSetMouseButtonCallback(window, mouseClick);
 
-	// init click force widget 
-	auto ui_force_widget = new UIForceWidget(robot_name, robot, graphics);
-	ui_force_widget->setEnable(false);
-
 	// cache variables
 	double last_cursorx, last_cursory;
 
-	// initialize glew
-	glewInitialize();
-
+	redis_client.set(CONTROLLER_RUNING_KEY, "0");
 	fSimulationRunning = true;
-	thread sim_thread(simulation, robot, sim, ui_force_widget);
+	thread sim_thread(simulation, robot, sim);
 	
 	// while window is open:
-	while (!glfwWindowShouldClose(window) && fSimulationRunning)
+	while (fSimulationRunning)
 	{
+
 		// update graphics. this automatically waits for the correct amount of time
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
@@ -211,32 +200,6 @@ int main() {
 		}
 		graphics->setCameraPose(camera_name, camera_pos, cam_up_axis, camera_lookat);
 		glfwGetCursorPos(window, &last_cursorx, &last_cursory);
-
-		ui_force_widget->setEnable(fRobotLinkSelect);
-		if (fRobotLinkSelect)
-		{
-			double cursorx, cursory;
-			int wwidth_scr, wheight_scr;
-			int wwidth_pix, wheight_pix;
-			std::string ret_link_name;
-			Eigen::Vector3d ret_pos;
-
-			// get current cursor position
-			glfwGetCursorPos(window, &cursorx, &cursory);
-
-			glfwGetWindowSize(window, &wwidth_scr, &wheight_scr);
-			glfwGetFramebufferSize(window, &wwidth_pix, &wheight_pix);
-
-			int viewx = floor(cursorx / wwidth_scr * wwidth_pix);
-			int viewy = floor(cursory / wheight_scr * wheight_pix);
-
-			if (cursorx > 0 && cursory > 0)
-			{
-				ui_force_widget->setInteractionParams(camera_name, viewx, wheight_pix - viewy, wwidth_pix, wheight_pix);
-				//TODO: this behavior might be wrong. this will allow the user to click elsewhere in the screen
-				// then drag the mouse over a link to start applying a force to it.
-			}
-		}
 	}
 
 	// stop simulation
@@ -254,61 +217,58 @@ int main() {
 }
 
 //------------------------------------------------------------------------------
-void simulation(Sai2Model::Sai2Model* robot, Simulation::Sai2Simulation* sim, UIForceWidget *ui_force_widget) {
+void simulation(Sai2Model::Sai2Model* robot, Simulation::Sai2Simulation* sim) {
 
 	int dof = robot->dof();
 	VectorXd command_torques = VectorXd::Zero(dof);
-	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
+	VectorXd gravity = VectorXd::Zero(dof);
+	redis_client.setEigenMatrixJSON(TORQUES_COMMANDED_KEY, command_torques);
 
 	// create a timer
 	LoopTimer timer;
 	timer.initializeTimer();
-	timer.setLoopFrequency(1000); 
+	timer.setLoopFrequency(200); 
 	double last_time = timer.elapsedTime(); //secs
 	bool fTimerDidSleep = true;
 
-	// init variables
-	VectorXd g(dof);
-
-	Eigen::Vector3d ui_force;
-	ui_force.setZero();
-
-	Eigen::VectorXd ui_force_command_torques;
-	ui_force_command_torques.setZero();
+	unsigned long long simulation_counter = 0;
 
 	while (fSimulationRunning) {
 		fTimerDidSleep = timer.waitForNextLoop();
 
-		// get gravity torques
-		robot->gravityVector(g);
-
-		// read arm torques from redis and apply to simulated robot
-		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
-		
-		ui_force_widget->getUIForce(ui_force);
-		ui_force_widget->getUIJointTorques(ui_force_command_torques);
-
-		if (fRobotLinkSelect)
-			sim->setJointTorques(robot_name, command_torques + ui_force_command_torques + g);
+		if(redis_client.get(CONTROLLER_RUNING_KEY) == "1")
+		{
+			gravity.setZero();
+		}
 		else
-			sim->setJointTorques(robot_name, command_torques + g);
+		{
+			robot->gravityVector(gravity);
+		}
+
+		// read arm torques from redis
+		command_torques = redis_client.getEigenMatrixJSON(TORQUES_COMMANDED_KEY);
+
+		// set torques to simulation
+		sim->setJointTorques(robot_name, command_torques + gravity);
 
 		// integrate forward
-		double curr_time = timer.elapsedTime();
-		double loop_dt = curr_time - last_time; 
-		sim->integrate(loop_dt);
+		// double curr_time = timer.elapsedTime();
+		// double loop_dt = curr_time - last_time; 
+		sim->integrate(0.001);
 
 		// read joint positions, velocities, update model
 		sim->getJointPositions(robot_name, robot->_q);
 		sim->getJointVelocities(robot_name, robot->_dq);
-		robot->updateModel();
+		robot->updateKinematics();
 
 		// write new robot state to redis
 		redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEY, robot->_q);
 		redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEY, robot->_dq);
 
 		//update last time
-		last_time = curr_time;
+		// last_time = curr_time;
+
+		simulation_counter++;
 	}
 
 	double end_time = timer.elapsedTime();
@@ -327,22 +287,6 @@ void glfwError(int error, const char* description) {
 
 //------------------------------------------------------------------------------
 
-bool glewInitialize() {
-	bool ret = false;
-	#ifdef GLEW_VERSION
-	if (glewInit() != GLEW_OK) {
-		cout << "Failed to initialize GLEW library" << endl;
-		cout << glewGetErrorString(ret) << endl;
-		glfwTerminate();
-	} else {
-		ret = true;
-	}
-	#endif
-	return ret;
-}
-
-//------------------------------------------------------------------------------
-
 void keySelect(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	bool set = (action != GLFW_RELEASE);
@@ -350,7 +294,7 @@ void keySelect(GLFWwindow* window, int key, int scancode, int action, int mods)
 		case GLFW_KEY_ESCAPE:
 			// exit application
 			fSimulationRunning = false;
-			glfwSetWindowShouldClose(window, GL_TRUE);
+			glfwSetWindowShouldClose(window,GL_TRUE);
 			break;
 		case GLFW_KEY_RIGHT:
 			fTransXp = set;
@@ -394,7 +338,7 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 			break;
 		// if right click: don't handle. this is for menu selection
 		case GLFW_MOUSE_BUTTON_RIGHT:
-			fRobotLinkSelect = set;
+			//TODO: menu
 			break;
 		// if middle click: don't handle. doesn't work well on laptops
 		case GLFW_MOUSE_BUTTON_MIDDLE:
