@@ -34,6 +34,7 @@ std::string JOINT_VELOCITIES_KEY;
 std::string JOINT_TORQUES_SENSED_KEY;
 // - write
 std::string JOINT_TORQUES_COMMANDED_KEY;
+std::string JOINT_DESIRED_KEY;
 
 // - model
 std::string MASSMATRIX_KEY;
@@ -49,6 +50,9 @@ int main() {
 	JOINT_ANGLES_KEY = "sai2::cs225a::project::sensors::q";
 	JOINT_VELOCITIES_KEY = "sai2::cs225a::project::sensors::dq";
 	JOINT_TORQUES_COMMANDED_KEY = "sai2::cs225a::project::actuators::fgc";
+    
+    JOINT_DESIRED_KEY = "joints_desired";
+
 
 	// start redis client
 	auto redis_client = RedisClient();
@@ -103,7 +107,6 @@ int main() {
 	VectorXd q_init_desired = initial_q;
 	//q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	//q_init_desired *= M_PI/180.0;
-    q_init_desired(26) = 1.3;
 	joint_task->_desired_position = q_init_desired;
 
 	// create a timer
@@ -124,6 +127,9 @@ int main() {
 		// read robot state from redis
 		robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
 		robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
+        
+        // read desired joints configuration
+        joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY);
 
 		// update model
 		robot->updateModel();
