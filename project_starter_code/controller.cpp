@@ -108,6 +108,7 @@ int main() {
 	//q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	//q_init_desired *= M_PI/180.0;
 	joint_task->_desired_position = q_init_desired;
+	joint_task->_desired_position(26) = 0.5;
 
 	// create a timer
 	LoopTimer timer;
@@ -129,7 +130,7 @@ int main() {
 		robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
         
         // read desired joints configuration
-        joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY);
+        //joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY);
 
 		// update model
 		robot->updateModel();
