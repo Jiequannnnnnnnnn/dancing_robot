@@ -75,21 +75,42 @@ int main() {
 	MatrixXd N_prec = MatrixXd::Identity(dof, dof);
 
 	// pose task
-	const string control_link = "neck_link2";
-	const Vector3d control_point = Vector3d(0,0,0.07);
-	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
+	const string control_link1 = "RL_foot";
+	const Vector3d control_point1 = Vector3d(0,0,0);
+	auto posori_task1 = new Sai2Primitives::PosOriTask(robot, control_link1, control_point1);
+    Eigen::Vector3d ee_position1 = Eigen::Vector3d::Zero();
+    robot->position(ee_position1, control_link1, control_point1);
+    Eigen::Vector3d ee_init1 = ee_position1;
+    
+    const string control_link2 = "LL_foot";
+    const Vector3d control_point2 = Vector3d(0,0,0);
+    auto posori_task2 = new Sai2Primitives::PosOriTask(robot, control_link2, control_point2);
+    Eigen::Vector3d ee_position2 = Eigen::Vector3d::Zero();
+    robot->position(ee_position2, control_link2, control_point2);
+    Eigen::Vector3d ee_init2 = ee_position2;
+    
+
 
 #ifdef USING_OTG
-	posori_task->_use_interpolation_flag = true;
+	posori_task1->_use_interpolation_flag = true;
+    posori_task2->_use_interpolation_flag = true;
 #else
-	posori_task->_use_velocity_saturation_flag = true;
+	posori_task1->_use_velocity_saturation_flag = true;
+    posori_task2->_use_velocity_saturation_flag = true;
 #endif
 	
-	VectorXd posori_task_torques = VectorXd::Zero(dof);
-	posori_task->_kp_pos = 200.0;
-	posori_task->_kv_pos = 20.0;
-	posori_task->_kp_ori = 200.0;
-	posori_task->_kv_ori = 20.0;
+	VectorXd posori_task_torques1 = VectorXd::Zero(dof);
+    VectorXd posori_task_torques2 = VectorXd::Zero(dof);
+    
+	posori_task1->_kp_pos = 200.0;
+	posori_task1->_kv_pos = 20.0;
+	posori_task1->_kp_ori = 200.0;
+	posori_task1->_kv_ori = 20.0;
+    
+    posori_task2->_kp_pos = 200.0;
+    posori_task2->_kv_pos = 20.0;
+    posori_task2->_kp_ori = 200.0;
+    posori_task2->_kv_ori = 20.0;
 
 	// joint task
 	auto joint_task = new Sai2Primitives::JointTask(robot);
@@ -129,15 +150,39 @@ int main() {
 		robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
 		robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
         
+        
+        // desiredt task configuration
+        cout << ee_position1 << endl;
+        cout << "------------------" << endl;
+        posori_task1->_desired_position = ee_init1;
+        posori_task2->_desired_position = ee_init2;
+        
         // read desired joints configuration
-        //joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY);
+        joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY);
 
 		// update model
 		robot->updateModel();
+
+        // update task model and set hierarchy
+        N_prec.setIdentity();
+        posori_task1->updateTaskModel(N_prec);
+        N_prec = posori_task1->_N;
+        posori_task2->updateTaskModel(N_prec);
+        N_prec = posori_task2->_N;
+        joint_task->updateTaskModel(N_prec);
+
+        // compute torques
+        posori_task1->computeTorques(posori_task_torques1);
+        posori_task2->computeTorques(posori_task_torques2);
+        joint_task->computeTorques(joint_task_torques);
+
+        command_torques = posori_task_torques1 + posori_task_torques2 + joint_task_torques;
 	
+        /*
 		if(state == JOINT_CONTROLLER)
 		{
-			// update task model and set hierarchy
+            
+			//
 			N_prec.setIdentity();
 			joint_task->updateTaskModel(N_prec);
 
@@ -146,7 +191,7 @@ int main() {
 
 			command_torques = joint_task_torques;
 
-            /*
+            
 			if( (robot->_q - q_init_desired).norm() < 0.15 )
 			{
 				posori_task->reInitializeTask();
@@ -158,7 +203,8 @@ int main() {
 
 				state = POSORI_CONTROLLER;
 			}
-             */
+            
+            
 		}
 
 		else if(state == POSORI_CONTROLLER)
@@ -175,6 +221,9 @@ int main() {
 
 			command_torques = posori_task_torques + joint_task_torques;
 		}
+        */
+            
+        
         
 		// send to redis
 		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
