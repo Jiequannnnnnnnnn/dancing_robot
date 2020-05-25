@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+
+<world name="demo_world" gravity="0.0 0.0 -9.81">
+
+	<robot name="toro">
+		<model dir="./resources" path="toro.urdf" name="toro" />
+	</robot>
+	
+        <static_object name="ground">        
+	     <collision>
+		  <origin xyz="0 0 -1.21" rpy="0 0 0" />
+		    <geometry>
+			<box size="3 1 0.1" radius="0.01" />
+		    </geometry>
+	     </collision>
+	     <visual>
+		<!-- <origin xyz="-1.5 -0.1 -2.82" /> -->
+		<origin xyz="-0.75 -1.95 0" /> 
+		<geometry>
+		    <mesh filename="./resources/../../../model/toro/meshes/obj/untitled.obj" />
+		</geometry>
+		<!-- <material name="material_red">
+		    <color rgba="0.5 0.1 0.1 1.0" />
+		</material> -->
+	     </visual> 
+	
+
+	    <!-- <origin xyz="0.0 0.0 0.0" rpy="0 0 0" /> -->
+	    <inertial>
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<mass value="1e-9" />
+		<inertia ixx="1e-9" iyy="1e-9" izz="1e-9" ixy="0" ixz="0" iyz="0" />
+	    </inertial>
+	</static_object>
+
+	<light name="light1" type="directional">
+		<position xyz="2.0 2.0 2.0" />
+		<lookat xyz="0.0 0.0 0.0" />
+	</light>
+
+	<light name="light2" type="directional">
+		<position xyz="-2.0 -2.0 2.0" />
+		<lookat xyz="0.0 0.0 0.0" />
+	</light>
+
+	<camera name="camera_fixed">
+		<!-- <position xyz="4 0.4 0.4" /> -->
+		<position xyz="2.5 -0.8 0.5" />
+		<vertical xyz="0.0 0.0 1.0" />
+		<lookat xyz="0.0 0.0 0.0" />
+	</camera>
+
+</world>
