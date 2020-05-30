@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-
+#include <cmath>
 
 #include <signal.h>
 bool runloop = true;
@@ -44,6 +44,11 @@ std::string ROBOT_GRAVITY_KEY;
 unsigned long long controller_counter = 0;
 
 const bool inertia_regularization = true;
+
+double sin_wave(double lower, double upper, double T, double t) {
+    // generate a wave that starts from lower limit
+    return (lower + upper) / 2.0 - (upper - lower) / 2.0 * cos(2 * M_PI / T * t);
+}
 
 int main() {
 
@@ -124,8 +129,8 @@ int main() {
 #endif
 
     VectorXd joint_task_torques = VectorXd::Zero(dof);
-    joint_task->_kp = 250.0;
-    joint_task->_kv = 15.0;
+    joint_task->_kp = 500.0;
+    joint_task->_kv = 30.0;
 
     MatrixXd q_desired;
     VectorXd q_init_desired_1 = initial_q;
@@ -149,7 +154,7 @@ int main() {
 
     int dance_move = 0;
     while (runloop) {
-        cout << dance_move << endl;
+        // cout << dance_move << endl;
         // wait for next scheduled loop
         timer.waitForNextLoop();
         double time = timer.elapsedTime() - start_time;
@@ -161,6 +166,20 @@ int main() {
         // read desired joints configuration
         joint_task->_desired_position = q_desired.row(dance_move);
         if (robot->_dq.norm() < 0.1 && (robot->_q - joint_task->_desired_position).norm() < 1 && dance_move < q_desired.rows()-1) dance_move++;
+        // overide above: read desired from redis
+		joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY) / 180.0 * M_PI;
+        
+        VectorXd desired_angles(33);
+        desired_angles << 
+        0,0,0,0,0,0, // whole body
+        0,0,0,0,0,0, // left leg
+        0,0,0,0,0,0, // right leg
+        0, // waist
+        20, sin_wave(100, 150, 2, time), 90, sin_wave(50, 70, 2, time), 0, 0, // left arm
+        20, sin_wave(150, 100, 2, time), 90, sin_wave(70, 50, 2, time), 0, 0, // right arm
+        sin_wave(-30, 30, 2, time), 0; // neck
+
+        joint_task->_desired_position << (desired_angles / 180.0 * M_PI);
         
         // update model
         robot->updateModel();
