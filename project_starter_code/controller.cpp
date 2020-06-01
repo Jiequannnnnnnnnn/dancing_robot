@@ -50,6 +50,14 @@ double sin_wave(double lower, double upper, double T, double t) {
     return (lower + upper) / 2.0 - (upper - lower) / 2.0 * cos(2 * M_PI / T * t);
 }
 
+double square_wave(double lower, double upper, double T, double t) {
+    // generate a square wave (piecewise constant)
+    if (((int)(t / (T / 2.0))) % 2 == 0)
+        return lower;
+    else
+        return upper;
+}
+
 int main() {
 
     JOINT_ANGLES_KEY = "sai2::cs225a::project::sensors::q";
@@ -129,8 +137,11 @@ int main() {
 #endif
 
     VectorXd joint_task_torques = VectorXd::Zero(dof);
-    joint_task->_kp = 500.0;
-    joint_task->_kv = 30.0;
+    joint_task->_kp = 500;
+    joint_task->_kv = 30;
+    joint_task->_otg->setMaxVelocity(10 * M_PI);
+    joint_task->_otg->setMaxAcceleration(30*M_PI);
+    joint_task->_otg->setMaxJerk(60*M_PI);
 
     MatrixXd q_desired;
     VectorXd q_init_desired_1 = initial_q;
@@ -153,9 +164,13 @@ int main() {
     myfile.open ("joints.csv");
 
     int dance_move = 0;
+
+    int state = 0; // -1: reset; other: corresponding dance move
+
     while (runloop) {
         // cout << dance_move << endl;
         // wait for next scheduled loop
+        cout << state << " " << dance_move << endl;
         timer.waitForNextLoop();
         double time = timer.elapsedTime() - start_time;
 
@@ -164,22 +179,85 @@ int main() {
         robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
         
         // read desired joints configuration
-        joint_task->_desired_position = q_desired.row(dance_move);
-        if (robot->_dq.norm() < 0.1 && (robot->_q - joint_task->_desired_position).norm() < 1 && dance_move < q_desired.rows()-1) dance_move++;
+        // joint_task->_desired_position = q_desired.row(dance_move);
+        // if (robot->_dq.norm() < 0.1 && (robot->_q - joint_task->_desired_position).norm() < 1 && dance_move < q_desired.rows()-1) dance_move++;
         // overide above: read desired from redis
-		joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY) / 180.0 * M_PI;
+		// joint_task->_desired_position = redis_client.getEigenMatrixJSON(JOINT_DESIRED_KEY) / 180.0 * M_PI;
         
         VectorXd desired_angles(33);
-        desired_angles << 
-        0,0,0,0,0,0, // whole body
-        0,0,0,0,0,0, // left leg
-        0,0,0,0,0,0, // right leg
-        0, // waist
-        20, sin_wave(100, 150, 2, time), 90, sin_wave(50, 70, 2, time), 0, 0, // left arm
-        20, sin_wave(150, 100, 2, time), 90, sin_wave(70, 50, 2, time), 0, 0, // right arm
-        sin_wave(-30, 30, 2, time), 0; // neck
 
-        joint_task->_desired_position << (desired_angles / 180.0 * M_PI);
+        if (state == -1) {
+            joint_task->_desired_position << 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
+            if (robot->_dq.norm() < 0.1 && (robot->_q - joint_task->_desired_position).norm() < 1) {
+                state = ++dance_move;
+                start_time = timer.elapsedTime(); // reset start time
+            }
+        }
+        else if (state == 0) {
+            // wave actions
+            desired_angles << 
+            0,0,0,0,0,0, // whole body
+            0,0,0,0,0,0, // left leg
+            0,0,0,0,0,0, // right leg
+            0, // waist
+            20, sin_wave(100, 150, 2, time), 90, sin_wave(50, 70, 2, time), 0, 0, // left arm
+            20, sin_wave(150, 100, 2, time), 90, sin_wave(70, 50, 2, time), 0, 0, // right arm
+            sin_wave(-30, 30, 2, time), 0; // neck
+            joint_task->_desired_position << (desired_angles / 180.0 * M_PI);
+            if (time > 3*2) {
+                state = -1; // reset
+            }
+        }
+        else if (state == 1) {
+            // gangnan style
+            desired_angles << 
+            0,0,0,0,0,0, // whole body
+            0, sin_wave(0, -60, 1, time), 0, sin_wave(0, -60, 1, time), 30, 0, // left leg
+            0, sin_wave(0, -60, 1, time), 0, sin_wave(0, -60, 1, time), 30, 0, // right leg
+            0, // waist
+            -30, 60, -60, 120, 0, 0, // left arm
+            20, sin_wave(120, 170, 1, time), sin_wave(50, 120, 1, time), 60, 0, 0, // right arm
+            sin_wave(-30, 30, 1, time), 0; // neck
+            joint_task->_desired_position << (desired_angles / 180.0 * M_PI);
+            if (time > 3*1) {
+                state = -1; // reset
+            }
+        }
+        else if (state == 2) {
+            // kungfu actions
+            joint_task->_kp = 500;
+            joint_task->_kv = 30;
+            joint_task->_otg->setMaxVelocity(100 * M_PI);
+            joint_task->_otg->setMaxAcceleration(300*M_PI);
+            joint_task->_otg->setMaxJerk(600*M_PI);
+            desired_angles <<
+            0,0,0,0,0,0,
+            0,-60,0,-60,30,0,
+            0,-60,0,-60,30,0,
+            0,
+            square_wave(-90, 70, 2, time), square_wave(40, 20, 2, time), square_wave(-40, 20, 2, time), square_wave(120, 0, 2, time) ,0,0,
+            square_wave(70, -90, 2, time), square_wave(20, 40, 2, time), square_wave(20, -40, 2, time), square_wave(0, 120, 2, time) ,0,0,
+            0,0;
+            joint_task->_desired_position << (desired_angles / 180.0 * M_PI);
+            if (time > 3*2) {
+                state = -1; // reset
+            }
+        }
+        else if (state == 3) {
+            // fly wave
+            desired_angles <<
+            0,0,0,0,0,0,
+            0,sin_wave(-100, 0, 1, time),0,sin_wave(100, 0, 1, time),0,0,
+            0,sin_wave(-100, 0, 1, time),0,sin_wave(100, 0, 1, time),0,0,
+            0,
+            0,sin_wave(50, 110, 1, time),90,sin_wave(-20, 20, 1, time),0,0,
+            0,sin_wave(50, 110, 1, time),90,sin_wave(-20, 20, 1, time),0,0,
+            0,sin_wave(-30, 30, 1, time);
+            joint_task->_desired_position << (desired_angles / 180.0 * M_PI);
+            // if (time > 3*1) {
+            //     state = -1; // reset
+            // }
+        }
         
         // update model
         robot->updateModel();
