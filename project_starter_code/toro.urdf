@@ -79,12 +79,12 @@
                 <mesh filename="../../../model/toro/meshes/obj/upper_hip.stl.obj"/>
             </geometry>
         </visual>
-        <!-- <collision>
+        <collision>
             <geometry>
                 <capsule a="-0.0177247 -0.134409 -0.117853" b="-0.0177247 0.134409 -0.117853" radius="0.072616"/>
                 <mesh filename="../../../model/toro/meshes/obj/upper_hip.stl.obj"/>
             </geometry>
-        </collision> -->
+        </collision>
     </link>
 
 <!--     <joint name="floating_base_6_dof_joint" type="floating">
@@ -151,20 +151,20 @@
                 <mesh filename="../../../model/toro/meshes/obj/right_lower_hip.stl.obj"/>
             </geometry>
         </visual>
-<!--         <collision>
+         <collision>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
                 <capsule a="0.00832896 0.0340227 -0.112749" b="0.00832895 -0.0145192 -0.112749" radius="0.0755809"/>
                 <mesh filename="../../../model/toro/meshes/obj/right_lower_hip.stl.obj"/>
             </geometry>
-        </collision>     -->    
+        </collision>   
     </link>
 
     <joint name="j1" type="revolute">
         <origin xyz="-0.0000000000 -0.1000000000 -0.1254789680" rpy="0 0 0" />
         <parent link="hip_base"/>
         <child link="RL_KOSY_L1"/> 
-        <limit effort="176" velocity="1.9199" lower="-1.5708" upper="0.7854" />
+        <limit effort="1760" velocity="19.199" lower="-1.5708" upper="0.7854" />
         <axis xyz="1 0 0"/>   
     </joint>
 
@@ -180,20 +180,20 @@
                 <mesh filename="../../../model/toro/meshes/obj/kuka-link2.stl.obj"/>
             </geometry>
         </visual>
-<!--         <collision>
+        <collision>
         <origin  xyz="0 0 0" rpy="-1.5708 0 3.1416 "/>
             <geometry>
                 <capsule a="0 -0.037 0" b="0 0.0 -0.17" radius="0.0764886"/>
                 <mesh filename="../../../model/toro/meshes/obj/kuka-link2.stl.obj"/>
             </geometry>
-        </collision> -->
+        </collision>
     </link>
 
     <joint name="j2" type="revolute">
         <origin xyz="-0.0000000000 -0.0350000000 -0.1200000000" rpy="0 0 0" />
         <parent link="RL_KOSY_L1"/>
         <child link="RL_KOSY_L23"/> 
-        <limit lower="-2.0071" upper="1.5708" effort="100" velocity="2.7402" />
+        <limit lower="-2.0071" upper="1.5708" effort="1000" velocity="27.402" />
         <axis xyz="0 1 0"/>    
     </joint>
 
@@ -220,7 +220,7 @@
     <joint name="j3" type="revolute">
         <parent link="RL_KOSY_L23"/>
         <child link="RL_KOSY_L4"/> 
-        <limit lower="-2.0944" upper="2.0944" effort="100" velocity="2.7402" />
+        <limit lower="-2.0944" upper="2.0944" effort="1000" velocity="27.402" />
         <axis xyz="0 0 1"/>     
     </joint>
 
@@ -247,7 +247,7 @@
         <origin xyz="0.0000000000 0.0000000000 -0.3999000880" rpy="0 0 0" />
         <parent link="RL_KOSY_L4"/>
     <child link="RL_KOSY_L56"/> 
-        <limit lower="-1.8326" upper="1.8326" effort="165" velocity="3.0718" />
+        <limit lower="0" upper="1.8326" effort="1650" velocity="30.718" />
          <axis xyz="0 1 0"/>
     </joint>
 
@@ -273,7 +273,7 @@
         <origin xyz="-0.0000000000 0.0220500000 -0.4000000000" rpy="0 0 0" />
         <parent link="RL_KOSY_L56"/>
         <child link="RL_ankle"/> 
-        <limit lower="-0.3403" upper="0.3403" effort="50" velocity="2.0944" />
+        <limit lower="-0.3403" upper="0.3403" effort="500" velocity="20.944" />
         <axis xyz="1 0 0"/> 
     </joint>
 
@@ -283,7 +283,7 @@
         <inertial>
             <!-- <origin xyz="-0.0012549156 -0.0000424296 0.0453354" rpy="0 0 0" /> -->
             <origin xyz="0.02 0.0 -0.045" rpy="0 0 0" />
-            <mass value="142.41951000" />
+            <mass value="1.4241951000" />
             <inertia  ixx="0.39254437" iyy="0.56384521" izz="0.49198016" ixy="-0.00052044" ixz="0.14223826" iyz="0.00040064" />
         </inertial>     
         <visual>
@@ -331,7 +331,8 @@
         <origin xyz="-0.0000000000 0.0000000000 -0.0200000" rpy="0 0 0" />
         <parent link="RL_ankle"/>
         <child link="RL_foot"/> 
-        <limit lower="-0.7804" upper="0.7804" effort="165" velocity="3.0718" />
+        <limit lower="-0.7854" upper="0.7854" effort="1650" velocity="30.718" />
+        <!-- <limit lower="-1.57" upper="1.57" effort="1650" velocity="30.718" /> -->
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -361,7 +362,7 @@
         <origin xyz="0.0000000000 0.1000000000 -0.1254789680" rpy="0 0 0" />
         <parent link="hip_base"/>
         <child link="LL_KOSY_L1"/> 
-        <limit lower="-0.7804" upper="1.5708" effort="176" velocity="1.9199" />
+        <limit lower="-0.7804" upper="1.5708" effort="1760" velocity="19.199" />
         <axis xyz= " 1 0 0 "/>
     </joint>
 
@@ -390,7 +391,7 @@
         <origin xyz="0.0000000000 0.0350000000 -0.1200000000" rpy="0 0 0" />
         <parent link="LL_KOSY_L1"/>
         <child link="LL_KOSY_L23"/> 
-        <limit lower="-2.0071" upper="1.5708" effort="100" velocity="2.7402" />
+        <limit lower="-2.0071" upper="1.5708" effort="1000" velocity="27.402" />
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -420,7 +421,7 @@
     <joint name="j9" type="revolute">
         <parent link="LL_KOSY_L23"/>
         <child link="LL_KOSY_L4"/> 
-        <limit lower="-2.0944" upper="2.0944" effort="100" velocity="2.7402" />
+        <limit lower="-2.0944" upper="2.0944" effort="1000" velocity="27.402" />
         <axis xyz="0 0 1"/>
     </joint>
 
@@ -449,7 +450,7 @@
         <origin xyz="0.0000000000 0.0000000000 -0.3999000880" rpy="0 0 0" />
         <parent link="LL_KOSY_L4"/>
         <child link="LL_KOSY_L56"/> 
-        <limit lower="-1.8326" upper="1.8326" effort="165" velocity="3.0718" />
+        <limit lower="0" upper="1.8326" effort="1650" velocity="30.718" />
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -476,7 +477,7 @@
         <origin xyz="0.0000000000 -0.0220500000 -0.4000000000" rpy="0 0 0" />
         <parent link="LL_KOSY_L56"/>
         <child link="LL_ankle"/> 
-        <limit lower="-0.3403" upper="0.3403" effort="50" velocity="2.0944" />
+        <limit lower="-0.3403" upper="0.3403" effort="500" velocity="20.944" />
         <axis xyz="1 0 0"/>
     </joint>
 
@@ -535,7 +536,8 @@
         <origin xyz="-0.0000000000 0.0000000000 -0.0200000" rpy="0 0 0" />
         <parent link="LL_ankle"/>
         <child link="LL_foot"/> 
-        <limit lower="-0.7854" upper="0.7854" effort="165" velocity="3.0718" />
+        <limit lower="-0.7854" upper="0.7854" effort="1650" velocity="30.718" />
+        <!-- <limit lower="-1.57" upper="1.57" effort="1650" velocity="30.718" /> -->
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -565,7 +567,7 @@
     <joint name="j13" type="revolute">
         <parent link="hip_base"/>
         <child link="trunk"/> 
-        <limit lower="-2.0944" upper="2.0944" effort="100" velocity="2.7402" />
+        <limit lower="-2.0944" upper="2.0944" effort="1000" velocity="27.402" />
         <axis xyz="0 0 1"/> 
     </joint>
 
@@ -610,7 +612,7 @@
         <origin xyz="0.0000000000 -0.2590563550  0.3552250220" rpy="1.0471975512 0.0000000000 0.0000000000" />
         <parent link="trunk"/>
         <child link="ra_link1"/> 
-        <limit lower="-2.0944" upper="2.0944" effort="100" velocity="2.7402" />
+        <limit lower="-2.0944" upper="2.0944" effort="1000" velocity="27.402" />
         <axis xyz="0 0 1"/>
     </joint>
 
@@ -653,7 +655,7 @@
         <origin xyz="0.0539500000 0.0000000000 0.0000000000" rpy="0.0000000000 0.0000000000 1.5707963268" />
         <parent link="ra_link1"/>
         <child link="ra_link2"/> 
-        <limit lower="-0.2618" upper="3.1416" effort="100" velocity="2.7402" />
+        <limit lower="-0.2618" upper="3.1416" effort="1000" velocity="27.402" />
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -693,7 +695,7 @@
         <origin xyz="0.0000000000 0.0000000000 0.0000000000" rpy="-3.1415926536 -1.0471975512 -3.1415926536" />
         <parent link="ra_link2"/>
         <child link="ra_link3"/> 
-        <limit lower="-1.8326" upper="1.8326" effort="40" velocity="2.0944" />
+        <limit lower="-1.8326" upper="1.8326" effort="400" velocity="20.944" />
         <axis xyz="0 0 1"/>
     </joint>
 
@@ -726,7 +728,7 @@
         <origin xyz="-0.0000000000 -0.0300000000  0.3129000000" rpy="0.0000000000 0.0000000000 0.0000000000" />
         <parent link="ra_link3"/>
         <child link="ra_link4"/> 
-        <limit lower="0" upper="2.5831" effort="40" velocity="2.0944" />
+        <limit lower="-1" upper="2.5831" effort="400" velocity="20.944" />
         <!-- <axis xyz="0 -1 0"/> -->
         <axis xyz="1 0 0"/>
     </joint>
@@ -748,13 +750,13 @@
                 <mesh filename="../../../model/toro/meshes/obj/va_right_lower_arm.stl.obj"/>
             </geometry>
         </visual>
-<!--         <collision>
+         <collision>
             <origin xyz="0.0000000000 0.0000000000 0.0000000000" rpy="3.1415926536 -0.0000000000  1.5707889804" />
             <geometry>
                 <capsule a="9.5357e-06 -1.3717e-06 0.103513" b="-4.69339e-05 7.35371e-06 0.206594" radius="0.0662048"/>
                 <mesh filename="../../../model/toro/meshes/obj/va_right_lower_arm.stl.obj"/>
             </geometry>
-        </collision> -->
+        </collision>
     </link>
 
     <joint name="j18" type="revolute">
@@ -762,7 +764,7 @@
         <origin xyz="-0.0115000000  0.0300000000  0.3059000000" rpy="0.0000000000 0.0000000000 0.0000000000" />
         <parent link="ra_link4"/>
         <child link="ra_link5"/> 
-        <limit lower="-2.5307" upper="2.0595" effort="40" velocity="2.0944" />
+        <limit lower="-2.5307" upper="2.0595" effort="400" velocity="20.944" />
         <!-- <axis xyz="0 0 -1"/> -->
         <axis xyz="0 0 1"/>
     </joint>
@@ -807,7 +809,7 @@
         <origin xyz="-0.0000000000 -0.0140000000  0.0560000000" rpy="0.0000000000 0.0000000000 0.0000000000" />
         <parent link="ra_link5"/>
         <child link="ra_link6"/> 
-        <limit lower="-1.8326" upper="1.8326" effort="35" velocity="2.0944" />
+        <limit lower="-1.8326" upper="1.8326" effort="350" velocity="20.944" />
         <!-- <axis xyz="-1 0 0"/> -->
         <axis xyz="0 1 0"/>
     </joint>
@@ -842,7 +844,7 @@
         <origin xyz="0.0000000000 0.2590563550 0.3552250220" rpy="2.0943951024 0.0000000000 0.0000000000" />
         <parent link="trunk"/>
         <child link="la_link1"/> 
-        <limit lower="-2.0944" upper="2.0944" effort="100" velocity="2.7402" />
+        <limit lower="-2.0944" upper="2.0944" effort="1000" velocity="27.402" />
         <!-- <axis xyz="0 -0.86603 -0.5"/> -->
         <axis xyz="0 0 1"/>
     </joint>
@@ -876,7 +878,7 @@
         <origin xyz="0.0539500000 0.0000000000 0.0000000000" rpy="-0.5235987756  0.0000000000  0.0000000000" />
         <parent link="la_link1"/>
         <child link="la_link2"/> 
-        <limit lower="-0.2618" upper="3.1416" effort="100" velocity="2.7402" />
+        <limit lower="-0.2618" upper="3.1416" effort="1000" velocity="27.402" />
         <axis xyz="1 0 0"/>
     </joint>
 
@@ -907,7 +909,7 @@
     <joint name="j22" type="revolute">
         <parent link="la_link2"/>
         <child link="la_link3"/> 
-        <limit lower="-1.8326" upper="1.8326" effort="40" velocity="2.0944" />
+        <limit lower="-1.8326" upper="1.8326" effort="400" velocity="20.944" />
          <axis xyz="0 1 0"/>
     </joint>
 
@@ -939,7 +941,7 @@
         <origin xyz="0.0300000000 -0.3128000000 -0.0000000000" rpy="0.0000000000 0.0000000000 0.0000000000" />
         <parent link="la_link3"/>
     <child link="la_link4"/> 
-        <limit lower="0" upper="2.5831" effort="40" velocity="2.0944" />
+        <limit lower="-1" upper="2.5831" effort="400" velocity="20.944" />
          <axis xyz="0 0 1"/>
     </joint>
 
@@ -975,7 +977,7 @@
         <origin xyz="-0.0300000000 -0.3058000000  0.0115000000" rpy="0.0000000000 0.0000000000 0.0000000000" />
         <parent link="la_link4"/>
         <child link="la_link5"/> 
-        <limit lower="-2.5307" upper="2.0595" effort="40" velocity="2.0944" />
+        <limit lower="-2.5307" upper="2.0595" effort="400" velocity="20.944" />
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -1020,7 +1022,7 @@
         <origin xyz="0.0140000000 -0.0560000000 -0.0000000000" rpy="0.0000000000 0.0000000000 0.0000000000" />
         <parent link="la_link5"/>
         <child link="la_link6"/> 
-        <limit lower="-1.8326" upper="1.8326" effort="40" velocity="2.0944" />
+        <limit lower="-1.8326" upper="1.8326" effort="400" velocity="20.944" />
         <axis xyz="1 0 0"/>
     </joint>
 
@@ -1052,7 +1054,7 @@
         <parent link="trunk"/>
         <child link="neck_link1"/> 
         <axis xyz="0 0 1"/>
-        <limit lower="-1.5708" upper="1.5708" effort="8.4" velocity="4.7124" /> 
+        <limit lower="-1.5708" upper="1.5708" effort="84" velocity="47.124" /> 
     </joint>
 
 
@@ -1089,7 +1091,7 @@
         <origin xyz="-0.035 0 0.05"/>
         <parent link="neck_link1"/>
         <child link="neck_link2"/> 
-        <limit lower="-0.5236" upper="1.5708" effort="8.4" velocity="4.7124" /> 
+        <limit lower="-0.5236" upper="1.5708" effort="84" velocity="47.124" /> 
         <axis xyz="0 1 0"/>
     </joint>
 
