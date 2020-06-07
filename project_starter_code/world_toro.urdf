@@ -5,54 +5,6 @@
 	<robot name="toro">
 		<model dir="./resources" path="toro.urdf" name="toro" />
 	</robot>
-	
-        <static_object name="ground">        
-	     <collision>
-		  <origin xyz="0 0 -1.21" rpy="0 0 0" />
-		    <geometry>
-			<box size="3 1 0.1" radius="0.01" />
-		    </geometry>
-	     </collision>
-	     <visual>
-		<!-- <origin xyz="-1.5 -0.1 -2.82" /> -->
-		<origin xyz="0 -0.15 -1.21" /> 
-		<geometry>
-		    <mesh filename="./resources/../../../model/toro/meshes/obj/stage_floor2.obj" />
-		</geometry>
-		<!-- <material name="material_red">
-		    <color rgba="0.5 0.1 0.1 1.0" />
-		</material> -->
-	     </visual> 
-	
-
-	    <!-- <origin xyz="0.0 0.0 0.0" rpy="0 0 0" /> -->
-	    <inertial>
-		<origin xyz="0 0 0" rpy="0 0 0" />
-		<mass value="1e-9" />
-		<inertia ixx="1e-9" iyy="1e-9" izz="1e-9" ixy="0" ixz="0" iyz="0" />
-	    </inertial>
-	</static_object>
-	
-	<static_object name="curtain">        
-	     <visual>
-		<!-- <origin xyz="-1.5 -0.1 -2.82" /> -->
-		<origin xyz="-4 -0.15 2.46" /> 
-		<geometry>
-		    <mesh filename="./resources/../../../model/toro/meshes/obj/stage_curtain.obj" />
-		</geometry>
-		<!-- <material name="material_red">
-		    <color rgba="0.5 0.1 0.1 1.0" />
-		</material> -->
-	     </visual> 
-	
-
-	    <!-- <origin xyz="0.0 0.0 0.0" rpy="0 0 0" /> -->
-	    <inertial>
-		<origin xyz="0 0 0" rpy="0 0 0" />
-		<mass value="1e-9" />
-		<inertia ixx="1e-9" iyy="1e-9" izz="1e-9" ixy="0" ixz="0" iyz="0" />
-	    </inertial>
-	</static_object>
 
 	<light name="light1" type="directional">
 		<position xyz="2.0 2.0 2.0" />
@@ -66,7 +18,8 @@
 
 	<camera name="camera_fixed">
 		<!-- <position xyz="4 0.4 0.4" /> -->
-		<position xyz="3 -1 0.7" />
+		<!-- <position xyz="3 -1 0.7" /> -->
+		<position xyz="3.5 0 0.5" />
 		<vertical xyz="0.0 0.0 1.0" />
 		<lookat xyz="0.0 0.0 0.0" />
 	</camera>

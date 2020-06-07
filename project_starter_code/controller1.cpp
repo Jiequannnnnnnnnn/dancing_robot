@@ -113,8 +113,6 @@ int main() {
     // desiredt task configuration
     posori_task1->_desired_position = ee_init1;
     posori_task2->_desired_position = ee_init2;
-    posori_task1->_desired_position(1) = -0.3;
-    posori_task2->_desired_position(1) = 0.3;
     //cout << ee_init1(0) << ee_init1(1) << ee_init1(2) << endl;
     //cout << ee_init2(0) << ee_init2(1) << ee_init2(2) << endl;
     posori_task3->_desired_position = ee_init3;
@@ -194,13 +192,12 @@ int main() {
 //    q_desired.row(q_desired.rows()-1) = q_init_desired_2;
     
     joint_task->_desired_position = initial_q;
-    joint_task->_desired_position(20) = 0.6;
-    joint_task->_desired_position(26) = 0.6;
-    joint_task->_desired_position(21) = -1.57;
-    joint_task->_desired_position(27) = -1.57;
-    joint_task->_desired_position(22) = 0.6;
-    joint_task->_desired_position(28) = 0.6;
-    joint_task->_desired_position(32) = 0.7;
+    joint_task->_desired_position(19) = 2.25;
+    joint_task->_desired_position(25) = 2.25;
+    joint_task->_desired_position(20) = 1;
+    joint_task->_desired_position(26) = 1;
+    joint_task->_desired_position(21) = 0.45;
+    joint_task->_desired_position(27) = 0.45;
 
     // create a timer
     LoopTimer timer;
@@ -212,11 +209,11 @@ int main() {
     ofstream myfile;
     myfile.open ("joints.csv");
 
-    int step = 1;
+    int step = 8; //1;
     int trunk_control = 0;
     int count = 0;
     double lastTime = start_time;
-
+//    int dance_move = 0;
     while (runloop) {
     
     	cout << step << endl;
@@ -231,39 +228,306 @@ int main() {
         
         if (step == 1){
         	if (robot->_dq.norm() < 0.5 && (robot->_q - joint_task->_desired_position).norm() < 0.5){
-        		step++;  
-        		lastTime = time;	
+        		step++;
+        		    	
+    			joint_task->_otg->setMaxVelocity(9*M_PI);
+    			joint_task->_otg->setMaxAcceleration(18*M_PI);
+    			joint_task->_otg->setMaxJerk(27*M_PI);
         	}
         }
         else if (step == 2){
-        	posori_task3->_desired_position(1) = 0.25*cos(0.5*M_PI*(time-lastTime) + M_PI/2);
-        	posori_task3->_desired_position(0) = 0.1;
-      		//posori_task3->_desired_position(0) += 0.01;
-        	//posori_task3->_desired_position(0) = 0.05*sin(0.25*M_PI*(time-lastTime));
-        	//joint_task->_desired_position(1) = 0.2*sin(0.5*M_PI*(time-lastTime));
-        	//joint_task->_desired_position(0) = 0.1*sin(0.5*M_PI*(time-lastTime));
-        	//joint_task->_desired_position(0) += 0.01;
+        
+        	// knee bending
+        	joint_task->_desired_position(7) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(13) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(11) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(17) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(9) = 1.56 - 1.56*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(15) = 1.56 - 1.56*sin(2*M_PI*time + M_PI/2);
+        
+        	// hand waving
+        	joint_task->_desired_position(22) = 0.25 + 0.7*cos(2*M_PI*time);
+    		joint_task->_desired_position(28) = 0.25 + 0.7*cos(2*M_PI*time);
+    	
+    		// head
+    		joint_task->_desired_position(32) = 0.25 - 0.25*cos(2*M_PI*time);
+    		
+    		if (time - lastTime > 6.5){
+    			step++;
+    			joint_task->_otg->setMaxVelocity(3*M_PI);
+    			joint_task->_otg->setMaxAcceleration(6*M_PI);
+    			joint_task->_otg->setMaxJerk(9*M_PI);
+    			joint_task->_desired_position = initial_q;
+    			joint_task->_desired_position(26) = 0.1;
+    			joint_task->_desired_position(20) = 0.3;
+    			joint_task->_desired_position(2) = -0.05;
+    			joint_task->_desired_position(15) = 0.2;
+    			joint_task->_desired_position(9) = 0.2;
+    			
+    		}
+    	}
+    	else if (step == 3  && robot->_dq.norm() < 1 && (robot->_q - joint_task->_desired_position).norm() < 1){
+    		step++;
+    		joint_task->_otg->setMaxVelocity(M_PI);
+    		joint_task->_otg->setMaxAcceleration(M_PI);
+    		joint_task->_otg->setMaxJerk(M_PI);
+    		
+    		trunk_control = 1;
+    		posori_task2->_desired_position(1) = 0.55;
+    		posori_task3->_desired_position = ee_init3;
+    		posori_task3->_desired_position(2) -= 0.15;
+    		posori_task3->_desired_position(1) = 0.437;
+    		//posori_task4->_desired_position(1) += 0.387;
+    		//posori_task4->_desired_position(2) -= 0.1;
+    		//posori_task5->_desired_position(1) += 0.387;
+    		//posori_task5->_desired_position(2) -= 0.1;
+    		
+    		lastTime = time;
+    		
+    	}
+    	else if (step == 4){
+    		
+    		//joint_task->_desired_position(5) = 0.8;
+    		
+    		joint_task->_desired_position(1) = 0.437;
+    		joint_task->_desired_position(2) = -0.1;
+    		//joint_task->_desired_position(9) = 1;
+    		joint_task->_desired_position(26) = 1.6;
+    		joint_task->_desired_position(27) = 0;
+    		joint_task->_desired_position(28) = 2.4;
+    		joint_task->_desired_position(15) = 2.5;
+    		joint_task->_desired_position(29) = 3.14;
+    		joint_task->_desired_position(20) = 0.5;
+    		joint_task->_desired_position(18) = -0.5;
+    		
+    		
+    		if (robot->_dq.norm() < 0.5 && time - lastTime > 2){
+        		step++;
+        		trunk_control = 0;
+        		joint_task->_desired_position = robot->_q;
+        		joint_task->_desired_position(15) = 2;
+        		joint_task->_otg->setMaxVelocity(12*M_PI);
+    			joint_task->_otg->setMaxAcceleration(24*M_PI);
+    			joint_task->_otg->setMaxJerk(36*M_PI);
+        		
+        	}
         	
-        	if (posori_task3->_desired_position(1) > 0){
-        		trunk_control = 3;
-        		joint_task->_desired_position(31) = 0.4;
-        		joint_task->_desired_position(6) = -0.3;
-        		if (posori_task2->_desired_position(0) - posori_task1->_desired_position(0) < 0.05){
-        			posori_task2->_desired_position(0) += 0.05;
-        			posori_task3->_desired_position(0) += 0.05;
-        		}
-        		//posori_task1->_desired_position(0) = 0;
+        	//if (time - lastTime > 2){
+        	//	posori_task3->_desired_position(2) -= 0.05;
+        	//	posori_task3->_desired_position(1) += 0.05;
+        	//	joint_task->_desired_position(1) += 0.05;
+    		//	joint_task->_desired_position(2) -= 0.07;
+        	//	lastTime = time;
+        	//	count++;
+        	//	if (count >= 2)
+        	//		step++;
+        	//}
+    	}
+    	else if (step == 5){
+    		
+    		
+    		if (robot->_dq.norm() < 0.5 && (robot->_q - joint_task->_desired_position).norm() < 0.8){
+    			step++;
+    			lastTime = time;
+    		}
+    	}
+    	else if (step == 6 ){
+    		
+    		joint_task->_desired_position(9) = 1;
+    		//joint_task->_desired_position(2) = 0.01*sin(2*M_PI*time);
+    		joint_task->_desired_position(18) = -0.5 + 0.4*(time-lastTime);
+    		if (time - lastTime > 2.5)
+    			step++;
+    		
+    		//if (time - lastTime > 1){
+    		//	joint_task->_desired_position(18) += 0.2;
+    		//	lastTime = time;
+    		//	count++;
+    		//	if (count >= 5)
+    		//		step++;
+    		//}
+    	}
+        else if (step == 7){
+        	joint_task->_otg->setMaxVelocity(3*M_PI);
+    		joint_task->_otg->setMaxAcceleration(6*M_PI);
+    		joint_task->_otg->setMaxJerk(9*M_PI);
+    		
+        	joint_task->_desired_position = initial_q;
+        	posori_task2->_desired_position = ee_init2;
+        	//joint_task->_desired_position(19) = 2.25;
+    		//joint_task->_desired_position(25) = 2.25;
+    		//joint_task->_desired_position(20) = 1;
+    		//joint_task->_desired_position(26) = 1;
+    		//joint_task->_desired_position(21) = 0.45;
+    		//joint_task->_desired_position(27) = 0.45;
+    		//step++;
+    		//lastTime = time;
+        }
+        else if (step == 8){
+        	if (robot->_dq.norm() < 0.5 && (robot->_q - joint_task->_desired_position).norm() < 0.5){
+        		step++;
+        		    	
+    			joint_task->_otg->setMaxVelocity(9*M_PI);
+    			joint_task->_otg->setMaxAcceleration(18*M_PI);
+    			joint_task->_otg->setMaxJerk(27*M_PI);
         	}
-        	else{
-        		trunk_control = 4;
-        		joint_task->_desired_position(31) = -0.4;
-        		joint_task->_desired_position(12) = 0.3;
-        		if (posori_task2->_desired_position(0) - posori_task1->_desired_position(0) >= 0.05){
-        			posori_task1->_desired_position(0) += 0.05;
-        			posori_task3->_desired_position(0) += 0.05;
-        		}
-        		//posori_task2->_desired_position(0) = 0;
+        }
+        else if (step == 9){
+        
+        	// knee bending
+        	joint_task->_desired_position(7) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(13) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(11) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(17) = -0.78 + 0.78*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(9) = 1.56 - 1.56*sin(2*M_PI*time + M_PI/2);
+        	joint_task->_desired_position(15) = 1.56 - 1.56*sin(2*M_PI*time + M_PI/2);
+        
+        	// hand waving
+        	joint_task->_desired_position(22) = 0.25 + 0.7*cos(2*M_PI*time);
+    		joint_task->_desired_position(28) = 0.25 + 0.7*cos(2*M_PI*time);
+    	
+    		// head
+    		joint_task->_desired_position(32) = 0.25 - 0.25*cos(2*M_PI*time);
+    		
+    		if (time - lastTime > 6.5){
+    			step++;
+    			joint_task->_otg->setMaxVelocity(3*M_PI);
+    			joint_task->_otg->setMaxAcceleration(6*M_PI);
+    			joint_task->_otg->setMaxJerk(9*M_PI);
+    			joint_task->_desired_position = initial_q;
+    			joint_task->_desired_position(26) = 0.3;
+    			joint_task->_desired_position(20) = 0.1;
+    			joint_task->_desired_position(2) = -0.05;
+    			joint_task->_desired_position(15) = 0.2;
+    			joint_task->_desired_position(9) = 0.2;
+    			
+    		}
+    	}
+    	else if (step == 10  && robot->_dq.norm() < 1 && (robot->_q - joint_task->_desired_position).norm() < 1){
+    		step++;
+    		joint_task->_otg->setMaxVelocity(3*M_PI);
+    		joint_task->_otg->setMaxAcceleration(6*M_PI);
+    		joint_task->_otg->setMaxJerk(9*M_PI);
+    		
+    		trunk_control = 1;
+    		posori_task1->_desired_position(1) = -0.55;
+    		//posori_task1->_desired_position(0) = 0;
+    		posori_task3->_desired_position = ee_init3;
+    		posori_task3->_desired_position(2) -= 0.15;
+    		posori_task3->_desired_position(1) = -0.437;
+    		//posori_task4->_desired_position(1) += 0.387;
+    		//posori_task4->_desired_position(2) -= 0.1;
+    		//posori_task5->_desired_position(1) += 0.387;
+    		//posori_task5->_desired_position(2) -= 0.1;
+    		
+    		lastTime = time;
+    		
+    	}
+    	else if (step == 11){
+    		
+    		joint_task->_desired_position(1) = -0.437;
+    		joint_task->_desired_position(2) = -0.1;
+    		joint_task->_desired_position(20) = 1.6;
+    		joint_task->_desired_position(21) = 0;
+    		joint_task->_desired_position(22) = 2.3;
+    		joint_task->_desired_position(9) = 3.14;
+    		joint_task->_desired_position(23) = 3.14;
+    		joint_task->_desired_position(26) = 0.5;
+    		joint_task->_desired_position(18) = 0.5;
+    		
+    		
+    		if (robot->_dq.norm() < 0.5 && time - lastTime > 2){
+        		step++;
+        		trunk_control = 0;
+        		joint_task->_desired_position = robot->_q;
+        		joint_task->_desired_position(9) = 2;
+        		joint_task->_otg->setMaxVelocity(12*M_PI);
+    			joint_task->_otg->setMaxAcceleration(24*M_PI);
+    			joint_task->_otg->setMaxJerk(36*M_PI);
+        		
         	}
+        	
+        	//if (time - lastTime > 2){
+        	//	posori_task3->_desired_position(2) -= 0.05;
+        	//	posori_task3->_desired_position(1) += 0.05;
+        	//	joint_task->_desired_position(1) += 0.05;
+    		//	joint_task->_desired_position(2) -= 0.07;
+        	//	lastTime = time;
+        	//	count++;
+        	//	if (count >= 2)
+        	//		step++;
+        	//}
+    	}
+    	else if (step == 12){
+    		
+    		
+    		if (robot->_dq.norm() < 0.5 && (robot->_q - joint_task->_desired_position).norm() < 0.8){
+    			step++;
+    			lastTime = time;
+    		}
+    	}
+    	else if (step == 13 ){
+    		
+    		joint_task->_desired_position(15) = 1;
+    		//joint_task->_desired_position(2) = 0.01*sin(2*M_PI*time);
+    		joint_task->_desired_position(18) = 0.5 - 0.4*(time-lastTime);
+    		if (time - lastTime > 2.5)
+    			step++;
+    		
+    		//if (time - lastTime > 1){
+    		//	joint_task->_desired_position(18) += 0.2;
+    		//	lastTime = time;
+    		//	count++;
+    		//	if (count >= 5)
+    		//		step++;
+    		//}
+    	}
+        //else if (step == 14){
+        //	joint_task->_otg->setMaxVelocity(3*M_PI);
+    	//	joint_task->_otg->setMaxAcceleration(6*M_PI);
+    	//	joint_task->_otg->setMaxJerk(9*M_PI);
+    	//	
+        //	joint_task->_desired_position = initial_q;
+        //	posori_task1->_desired_position = ee_init1;
+        //	joint_task->_desired_position(19) = 2.25;
+    	//	joint_task->_desired_position(25) = 2.25;
+    	//	joint_task->_desired_position(20) = 1;
+    	//	joint_task->_desired_position(26) = 1;
+    	//	joint_task->_desired_position(21) = 0.45;
+    	//	joint_task->_desired_position(27) = 0.45;
+    	//	step = 1;
+    	//	lastTime = time;
+        //}
+        else if (step == 14){
+        	joint_task->_otg->setMaxVelocity(3*M_PI);
+    		joint_task->_otg->setMaxAcceleration(6*M_PI);
+    		joint_task->_otg->setMaxJerk(9*M_PI);
+    		
+        	joint_task->_desired_position = initial_q;
+        	posori_task1->_desired_position = ee_init1;
+        	joint_task->_desired_position(22) = 2;
+        	//joint_task->_desired_position(21) = 0.7;
+        	joint_task->_desired_position(19) = 0.8;
+        	joint_task->_desired_position(23) = 3.14;
+        	
+        	if (robot->_dq.norm() < 2.5 && (robot->_q - joint_task->_desired_position).norm() < 2.5){
+    			step++;
+    			trunk_control = 2;
+    			
+    			joint_task->_kp = 250.0;
+    			joint_task->_kv = 15.0;
+    			
+    			joint_task->_otg->setMaxVelocity(M_PI);
+    			joint_task->_otg->setMaxAcceleration(2*M_PI);
+    			joint_task->_otg->setMaxJerk(3*M_PI);
+    			
+    			joint_task->_desired_position(0) = 2.65;
+    			joint_task->_desired_position(1) = -0.75;
+    			joint_task->_desired_position(2) = 0.19;
+    			joint_task->_desired_position(5) = -0.4;
+    			joint_task->_desired_position(4) = -0.13;
+    			
+    		}
         }
         
         
@@ -313,37 +577,14 @@ int main() {
         command_torques = joint_task_torques + posori_task_torques1 + posori_task_torques2 + posori_task_torques3;// + posori_task_torques4 + posori_task_torques5;
         }
         else if (trunk_control == 2){
+        	//posori_task4->updateTaskModel(N_prec);
+        	//N_prec = posori_task4->_N;
         	joint_task->updateTaskModel(N_prec);
         	
         	joint_task->computeTorques(joint_task_torques);
+        	//posori_task4->computeTorques(posori_task_torques4);
         	
-        	command_torques = joint_task_torques;
-        }
-        else if (trunk_control == 3){
-        	posori_task2->updateTaskModel(N_prec);
-        	N_prec = posori_task2->_N;
-        	posori_task3->updateTaskModel(N_prec);
-        	N_prec = posori_task3->_N;
-        	joint_task->updateTaskModel(N_prec);
-        	
-        	joint_task->computeTorques(joint_task_torques);
-        	posori_task2->computeTorques(posori_task_torques2);
-        	posori_task3->computeTorques(posori_task_torques3);
-        	
-        	command_torques = joint_task_torques + posori_task_torques2 + posori_task_torques3;
-        }
-        else if (trunk_control == 4){
-        	posori_task1->updateTaskModel(N_prec);
-        	N_prec = posori_task1->_N;
-        	posori_task3->updateTaskModel(N_prec);
-        	N_prec = posori_task3->_N;
-        	joint_task->updateTaskModel(N_prec);
-        	
-        	joint_task->computeTorques(joint_task_torques);
-        	posori_task1->computeTorques(posori_task_torques1);
-        	posori_task3->computeTorques(posori_task_torques3);
-        	
-        	command_torques = joint_task_torques + posori_task_torques1 + posori_task_torques3;
+        	command_torques = joint_task_torques; // + posori_task_torques4;
         }
 
     
